@@ -14,14 +14,24 @@ const POW_TARGET = 2;
     // TODO: Web3 connection
     const web3 = new Web3();
     try {
-        web3.setProvider(new Web3.providers.WebsocketProvider("ws://172.17.0.1:8689", {headers: { Origin: "mychat"}}));
-        await web3.eth.net.isListening();
+        //web3.setProvider(new Web3.providers.WebsocketProvider("ws://172.17.0.2:8687", {headers: { Origin: "mychat"}}));
+        //var web3 = new Web3.providers.WebsocketProvider("ws://172.17.0.2:8545");
+        //var web3 = new Web3.providers.WebsocketProvider("ws://172.17.0.2:8687", {headers: { Origin: "mychat"}});
+        //var web3 = new Web3(new Web3.providers.HttpProvider('http://172.17.0.2:8545'));
+        //var web3 = new Web3(new Web3.providers.HttpProvider('http://172.17.0.2:8545'));
+        web3.setProvider(new Web3.providers.WebsocketProvider("ws://172.17.0.2:8687", {headers: { Origin: "mychat"}}));
+        //await web3.eth.getAccounts().then(console.log);
+        //await web3.shh.newKeyPair().then(console.log);
+
+        //console.log(web3.shh);
+        //await web3.eth.net.isListening();
     } catch (err){
+        console.log(err);
         process.exit();
     }
 
     const ui = new UI();
-    
+
     // TODO: Generate keypair
     const keyPair = await web3.shh.newKeyPair();
 
@@ -29,9 +39,9 @@ const POW_TARGET = 2;
     const pubKey = await web3.shh.getPublicKey(keyPair);
 
     ui.setUserPublicKey(pubKey);
-    
+
     // TODO: Generate a symmetric key
-    const channelSymKey = await web3.shh.generateSymKeyFromPassword(DEFAULT_CHANNEL); 
+    const channelSymKey = await web3.shh.generateSymKeyFromPassword(DEFAULT_CHANNEL);
 
     const channelTopic = DEFAULT_TOPIC;
 
@@ -63,18 +73,20 @@ const POW_TARGET = 2;
             }
         } catch(err) {
             console.log(err);
+                console.log("cmd");
             ui.addError("Couldn't send message: " + err.message);
         }
     });
 
     // TODO: Subscribe to public chat messages
-    web3.shh.subscribe("message", {
+    web3.shh.subscribe("messages", {
         minPow: POW_TARGET,
         symKeyID: channelSymKey,
         topics: [channelTopic]
-    }).on('date', (date)=>{
+    }).on('data', (data)=>{
         ui.addMessage(data.sig, web3.utils.toAscii(data.payload));
     }).on('error', (err) => {
+            console.log("public messages");
         ui.addError("Couldn't decode message: " + err.message);
     });
 
@@ -86,7 +98,8 @@ const POW_TARGET = 2;
     }).on('data', (data) => {
         ui.addMessage(data.sig, web3.utils.toAscii(data.payload), true);
     }).on('error', (err) => {
+            console.log("private messages");
         ui.addError("Couldn't decode message: " + err.message)
     })
-   
+
 })();
